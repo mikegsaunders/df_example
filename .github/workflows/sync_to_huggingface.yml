@@ -72,6 +72,6 @@ jobs:
           for file in "$UPLOAD_FOLDER"/*; do
             # Ensure we skip .github (though it shouldn't exist at this stage)
             if [[ ! "$file" =~ ".github" ]]; then
-              huggingface-cli upload df_example "$file" 
+              huggingface-cli upload aveclaudenum/df_example "$file" --repo-type=dataset 
             fi
           done
