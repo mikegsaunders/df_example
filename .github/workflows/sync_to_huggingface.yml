@@ -37,6 +37,12 @@ jobs:
             echo "Zenodo record found. Proceeding with Hugging Face upload."
             # Extract download URL from Zenodo response
             ZIP_URL=$(echo "$RESPONSE" | jq -r '.files[0].links.download')
+            # Adjust the URL if it contains '/draft/'
+            if echo "$ZIP_URL" | grep -q '/draft/'; then
+              ZIP_URL=$(echo "$ZIP_URL" | sed 's|/draft||')
+            fi
+            echo "Adjusted ZIP URL: $ZIP_URL"
+            
             # Download the file
             curl -L "$ZIP_URL" -o dataset.zip
             unzip dataset.zip -d dataset_folder
