@@ -50,7 +50,7 @@ jobs:
       - name: Sync to Hugging Face
         uses: nateraw/huggingface-sync-action@v0.0.5
         with:
-          huggingface_repo_id: 'your_hf_username/repo_name'
+          huggingface_repo_id: 'aveclaudenum/df_example'
           hf_token: ${{ secrets.HF_TOKEN }}
           repo_type: 'dataset'
           local_dir: './dataset.zip'
