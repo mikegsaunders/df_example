@@ -72,6 +72,6 @@ jobs:
           for file in "$UPLOAD_FOLDER"/*; do
             # Ensure we skip .github (though it shouldn't exist at this stage)
             if [[ ! "$file" =~ ".github" ]]; then
-              huggingface-cli upload "$file" --repo-id <YOUR_HUGGINGFACE_DATASET_REPO>
+              huggingface-cli upload df_example "$file" 
             fi
           done
