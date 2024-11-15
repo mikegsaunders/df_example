@@ -17,7 +17,7 @@ jobs:
       - name: Wait for Zenodo record
         run: |
           echo "Waiting for 5 minutes to ensure Zenodo record is created..."
-          sleep 300  # Sleep for 300 seconds (5 minutes)
+          sleep 120  # Sleep for 120 seconds (2 minutes)
 
       # Step 3: Check Zenodo for New Record
       - name: Check Zenodo for New Record
@@ -49,7 +49,10 @@ jobs:
           fi
       # Step 4: Authenticate with Hugging Face CLI
       - name: Authenticate with Hugging Face CLI
-        run: echo "${{ secrets.HF_TOKEN }}" | huggingface-cli login --token
+        run: |
+          pip install -U "huggingface_hub[cli]"
+          HF_TOKEN="${{ secrets.HF_TOKEN }}"
+          huggingface-cli login --token $HF_TOKEN
       
       # Step: Upload files to Hugging Face from detected folder
       - name: Upload files to Hugging Face
