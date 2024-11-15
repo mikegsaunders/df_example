@@ -35,22 +35,34 @@ jobs:
             exit 1  # Fail the workflow if no Zenodo record found
           else
             echo "Zenodo record found. Proceeding with Hugging Face upload."
-            # Extract Zenodo record's ZIP file URL
-            ZIP_URL=$(echo "$RESPONSE" | jq -r '.links.self' | sed 's/\/records\//\/files\//')
-            echo "ZIP file URL: $ZIP_URL"
-            echo "ZENODO_ZIP_URL=$ZIP_URL" >> $GITHUB_ENV
+            # Extract download URL from Zenodo response
+            ZIP_URL=$(echo "$RESPONSE" | jq -r '.files[0].links.download')
+            # Download the file
+            curl -L "$ZIP_URL" -o dataset.zip
+            unzip dataset.zip -d dataset_folder
           fi
-
-      # Step 4: Download Zenodo ZIP file
-      - name: Download Zenodo ZIP file
+      # Step 4: Authenticate with Hugging Face CLI
+      - name: Authenticate with Hugging Face CLI
+        run: echo "${{ secrets.HF_TOKEN }}" | huggingface-cli login --token
+      
+      # Step: Upload files to Hugging Face from detected folder
+      - name: Upload files to Hugging Face
         run: |
-          curl -L ${{ env.ZENODO_ZIP_URL }} -o dataset.zip
-
-      # Step 5: Sync to Hugging Face
-      - name: Sync to Hugging Face
-        uses: nateraw/huggingface-sync-action@v0.0.5
-        with:
-          huggingface_repo_id: 'aveclaudenum/df_example'
-          hf_token: ${{ secrets.HF_TOKEN }}
-          repo_type: 'dataset'
-          local_dir: './dataset.zip'
+          # Identify the first subfolder in dataset_folder
+          UPLOAD_FOLDER=$(find dataset_folder -mindepth 1 -maxdepth 1 -type d | head -n 1)
+      
+          # Ensure a folder was found
+          if [ -z "$UPLOAD_FOLDER" ]; then
+            echo "Error: No subfolder found in dataset_folder!"
+            exit 1
+          fi
+      
+          echo "Uploading from folder: $UPLOAD_FOLDER"
+      
+          # Upload each file in the detected folder
+          for file in "$UPLOAD_FOLDER"/*; do
+            # Ensure we skip .github (though it shouldn't exist at this stage)
+            if [[ ! "$file" =~ ".github" ]]; then
+              huggingface-cli upload "$file" --repo-id <YOUR_HUGGINGFACE_DATASET_REPO>
+            fi
+          done
