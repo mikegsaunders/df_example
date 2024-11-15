@@ -27,7 +27,7 @@ jobs:
           ZENODO_API_URL="https://zenodo.org/api/records"
           ZENODO_API_TOKEN="${{ secrets.ZENODO_API_TOKEN }}"
           # Fetch records associated with the GitHub release
-          RESPONSE=$(curl -H "Authorization: Bearer $ZENODO_API_TOKEN" "$ZENODO_API_URL" | jq '.hits.hits[] | select(.metadata.title | contains($RELEASE_TAG))')
+          RESPONSE=$(curl -H "Authorization: Bearer $ZENODO_API_TOKEN" "$ZENODO_API_URL" | jq --arg release_tag "$RELEASE_TAG" '.hits.hits[] | select(.metadata.title | contains($release_tag))')
           echo "$RESPONSE"
           # Check if Zenodo record exists
           if [[ -z "$RESPONSE" ]]; then
