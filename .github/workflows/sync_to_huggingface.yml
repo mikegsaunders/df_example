@@ -1,0 +1,56 @@
+name: Sync GitHub Release to Zenodo and Hugging Face
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  sync_zenodo_to_huggingface:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # Step 2: Wait for 5 minutes to allow Zenodo record creation
+      - name: Wait for Zenodo record
+        run: |
+          echo "Waiting for 5 minutes to ensure Zenodo record is created..."
+          sleep 300  # Sleep for 300 seconds (5 minutes)
+
+      # Step 3: Check Zenodo for New Record
+      - name: Check Zenodo for New Record
+        id: zenodo_check
+        run: |
+          RELEASE_TAG="${{ github.ref_name }}"
+          ZENODO_API_URL="https://zenodo.org/api/records"
+          ZENODO_API_TOKEN="${{ secrets.ZENODO_API_TOKEN }}"
+          # Fetch records associated with the GitHub release
+          RESPONSE=$(curl -H "Authorization: Bearer $ZENODO_API_TOKEN" "$ZENODO_API_URL" | jq '.hits.hits[] | select(.metadata.title | contains($RELEASE_TAG))')
+          echo "$RESPONSE"
+          # Check if Zenodo record exists
+          if [[ -z "$RESPONSE" ]]; then
+            echo "No Zenodo record found for this release."
+            exit 1  # Fail the workflow if no Zenodo record found
+          else
+            echo "Zenodo record found. Proceeding with Hugging Face upload."
+            # Extract Zenodo record's ZIP file URL
+            ZIP_URL=$(echo "$RESPONSE" | jq -r '.links.self' | sed 's/\/records\//\/files\//')
+            echo "ZIP file URL: $ZIP_URL"
+            echo "ZENODO_ZIP_URL=$ZIP_URL" >> $GITHUB_ENV
+          fi
+
+      # Step 4: Download Zenodo ZIP file
+      - name: Download Zenodo ZIP file
+        run: |
+          curl -L ${{ env.ZENODO_ZIP_URL }} -o dataset.zip
+
+      # Step 5: Sync to Hugging Face
+      - name: Sync to Hugging Face
+        uses: nateraw/huggingface-sync-action@v0.0.5
+        with:
+          huggingface_repo_id: 'your_hf_username/repo_name'
+          hf_token: ${{ secrets.HF_TOKEN }}
+          repo_type: 'dataset'
+          local_dir: './dataset.zip'
